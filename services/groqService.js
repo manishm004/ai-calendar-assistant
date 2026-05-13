@@ -2,14 +2,26 @@ const axios = require("axios");
 
 async function extractEvent(userMessage) {
   try {
+    const today = new Date();
+
+    const currentDate =
+      `${today.getFullYear()}-${String(
+        today.getMonth() + 1
+      ).padStart(2, "0")}-${String(
+        today.getDate()
+      ).padStart(2, "0")}`;
+
     const prompt = `
-Extract calendar event details.
+Today's date is ${currentDate}.
+Timezone is Asia/Kolkata.
+
+Extract the calendar event.
 
 Return ONLY raw JSON.
 
-No markdown.
-No explanation.
-No code blocks.
+NO markdown.
+NO explanation.
+NO code block.
 
 Format:
 
@@ -17,6 +29,18 @@ Format:
   "title": "",
   "date": "YYYY-MM-DD",
   "time": "HH:MM"
+}
+
+Examples:
+
+Input:
+Meeting tomorrow at 4 PM
+
+Output:
+{
+  "title": "Meeting",
+  "date": "${currentDate}",
+  "time": "16:00"
 }
 
 User message:
