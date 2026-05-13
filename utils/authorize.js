@@ -7,17 +7,45 @@ const { google } = require("googleapis");
 
 const SCOPES = ["https://www.googleapis.com/auth/calendar"];
 
-const TOKEN_PATH =
-  process.env.GOOGLE_TOKEN_PATH ||
-  path.join(__dirname, "../etc/secrets/token.json");
+function findFirstExistingPath(paths) {
+  for (const candidate of paths) {
+    if (candidate && fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+const CREDENTIALS_CANDIDATES = [
+  process.env.GOOGLE_CREDENTIALS_PATH,
+  "/etc/secrets/credentials.json",
+  path.join(process.cwd(), "credentials.json"),
+  path.join(process.cwd(), "etc/secrets/credentials.json"),
+  path.join(__dirname, "../etc/secrets/credentials.json"),
+];
+
+const TOKEN_CANDIDATES = [
+  process.env.GOOGLE_TOKEN_PATH,
+  "/etc/secrets/token.json",
+  path.join(process.cwd(), "token.json"),
+  path.join(process.cwd(), "etc/secrets/token.json"),
+  path.join(__dirname, "../etc/secrets/token.json"),
+];
+
 const CREDENTIALS_PATH =
-  process.env.GOOGLE_CREDENTIALS_PATH ||
-  path.join(__dirname, "../etc/secrets/credentials.json");
+  findFirstExistingPath(CREDENTIALS_CANDIDATES) ||
+  (process.env.GOOGLE_CREDENTIALS_PATH || "/etc/secrets/credentials.json");
+const TOKEN_PATH =
+  findFirstExistingPath(TOKEN_CANDIDATES) ||
+  (process.env.GOOGLE_TOKEN_PATH || path.join(process.cwd(), "token.json"));
 
 function authorize() {
   return new Promise((resolve, reject) => {
     fs.readFile(CREDENTIALS_PATH, (err, content) => {
-      if (err) return reject(err);
+      if (err) {
+        err.message = `${err.message}. Checked: ${CREDENTIALS_CANDIDATES.join(", ")}`;
+        return reject(err);
+      }
 
       const credentials = JSON.parse(content);
 
@@ -65,9 +93,12 @@ function getAccessToken(oAuth2Client, resolve, reject) {
 
       oAuth2Client.setCredentials(tokens);
 
-      fs.writeFileSync(TOKEN_PATH, JSON.stringify(tokens, null, 2));
-
-      console.log(`\nToken stored to ${TOKEN_PATH}`);
+      try {
+        fs.writeFileSync(TOKEN_PATH, JSON.stringify(tokens, null, 2));
+        console.log(`\nToken stored to ${TOKEN_PATH}`);
+      } catch (writeError) {
+        console.warn(`\nCould not write token file at ${TOKEN_PATH}: ${writeError.message}`);
+      }
 
       resolve(oAuth2Client);
     } catch (error) {
