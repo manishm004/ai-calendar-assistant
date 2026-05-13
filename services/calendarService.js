@@ -5,7 +5,7 @@ async function createCalendarEvent(eventData) {
   try {
     console.log("Creating Google Calendar event...");
 
-    const auth = authorize();
+    const auth = await authorize();
 
     const calendar = google.calendar({
       version: "v3",
