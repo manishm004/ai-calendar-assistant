@@ -3,11 +3,15 @@ const axios = require("axios");
 async function extractEvent(userMessage) {
   try {
     const prompt = `
-Convert the following calendar request into JSON.
+Extract calendar event details.
 
-Current timezone: Asia/Kolkata
+Return ONLY raw JSON.
 
-Return ONLY valid JSON in this format:
+No markdown.
+No explanation.
+No code blocks.
+
+Format:
 
 {
   "title": "",
@@ -16,7 +20,7 @@ Return ONLY valid JSON in this format:
 }
 
 User message:
-"${userMessage}"
+${userMessage}
 `;
 
     const response = await axios.post(
@@ -39,12 +43,20 @@ User message:
       }
     );
 
-    const content =
+    let content =
       response.data.choices[0].message.content;
+
+    content = content
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
 
     return JSON.parse(content);
   } catch (error) {
-    console.error(error.response?.data || error.message);
+    console.error(
+      error.response?.data || error.message
+    );
+
     throw error;
   }
 }
